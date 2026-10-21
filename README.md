@@ -1,5 +1,9 @@
 # NextLib
 
+RelaxPic modification notice (2026-10-21): this fork adds optional native size
+profiles in `ffmpeg/setup.sh` and corresponding build tests in `ffmpeg/test_setup.py`.
+Decoder, demuxer, parser and protocol selection is preserved; GPLv3 licensing is unchanged.
+
 [![Build nextlib](https://github.com/anilbeesetti/nextlib/actions/workflows/build.yaml/badge.svg)](https://github.com/anilbeesetti/nextlib/actions/workflows/build.yaml) [![Maven Central](https://img.shields.io/maven-central/v/io.github.anilbeesetti/nextlib-media3ext.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.anilbeesetti/nextlib-media3ext)
 
 NextLib is a library for adding ffmpeg codecs to [Media3](https://github.com/androidx/media).
