@@ -8,18 +8,39 @@ FFMPEG_VERSION=9.0.1
 
 # Directories
 BASE_DIR=$(cd "$(dirname "$0")" && pwd)
-BUILD_DIR=$BASE_DIR/build
-OUTPUT_DIR=$BASE_DIR/output
+SIZE_PROFILE=${SIZE_PROFILE:-baseline}
+# Keep the published build's paths and all four ABIs by default.
+if [[ $SIZE_PROFILE == baseline ]]; then
+  BUILD_DIR=$BASE_DIR/build
+  OUTPUT_DIR=$BASE_DIR/output
+else
+  BUILD_DIR=$BASE_DIR/build-$SIZE_PROFILE
+  OUTPUT_DIR=$BASE_DIR/output-$SIZE_PROFILE
+fi
 SOURCES_DIR=$BASE_DIR/sources
 FFMPEG_DIR=$SOURCES_DIR/ffmpeg-$FFMPEG_VERSION
 DAV1D_DIR=$SOURCES_DIR/dav1d-$DAV1D_VERSION
 MBEDTLS_DIR=$SOURCES_DIR/mbedtls-$MBEDTLS_VERSION
 
 # Configuration
-ANDROID_ABIS="x86 x86_64 armeabi-v7a arm64-v8a"
+ANDROID_ABIS=${SIZE_ABIS:-"x86 x86_64 armeabi-v7a arm64-v8a"}
 ANDROID_PLATFORM=21
 ENABLED_DECODERS="vorbis opus flac alac pcm_mulaw pcm_alaw mp3 amrnb amrwb aac ac3 eac3 dca mlp truehd h264 hevc mpeg2video mpegvideo vp8 vp9 libdav1d"
-JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || sysctl -n hw.physicalcpu 2>/dev/null || echo 4)
+JOBS=${SIZE_JOBS:-4}
+SIZE_CFLAGS=""
+SIZE_LDFLAGS=""
+SIZE_CONFIG=()
+case "$SIZE_PROFILE" in
+  baseline) ;;
+  link|small)
+    SIZE_CFLAGS="-ffunction-sections -fdata-sections"
+    SIZE_LDFLAGS="-Wl,--gc-sections,--icf=safe"
+    SIZE_CONFIG=(--enable-lto=thin)
+    # Preserve CONFIG_SMALL=0 and all format/codec descriptions.
+    if [[ $SIZE_PROFILE == small ]]; then SIZE_CONFIG+=(--optflags=-Oz); fi
+    ;;
+  *) echo "Unknown profile: $SIZE_PROFILE" >&2; exit 2 ;;
+esac
 
 # Gradle supplies these; standalone callers use the same pinned versions.
 CATALOG="$BASE_DIR/../gradle/libs.versions.toml"
@@ -200,8 +221,8 @@ function buildFfmpeg() {
       --ar="${TOOLCHAIN_PREFIX}/bin/llvm-ar" \
       --ranlib="${TOOLCHAIN_PREFIX}/bin/llvm-ranlib" \
       --strip="${TOOLCHAIN_PREFIX}/bin/llvm-strip" \
-      --extra-cflags="-O3 -fPIC $DEP_CFLAGS" \
-      --extra-ldflags="$DEP_LD_FLAGS -Wl,-z,max-page-size=16384" \
+      --extra-cflags="-O3 -fPIC $DEP_CFLAGS $SIZE_CFLAGS" \
+      --extra-ldflags="$DEP_LD_FLAGS -Wl,-z,max-page-size=16384 $SIZE_LDFLAGS" \
       --pkg-config="$(command -v pkg-config)" \
       --pkg-config-flags=--static \
       --target-os=android \
@@ -226,13 +247,16 @@ function buildFfmpeg() {
       --extra-ldexeflags=-pie \
       --disable-debug \
       ${EXTRA_BUILD_CONFIGURATION_FLAGS} \
-      ${COMMON_OPTIONS}
+      ${COMMON_OPTIONS} "${SIZE_CONFIG[@]}"
 
     # Build FFmpeg
     echo "Building FFmpeg for $ARCH..."
     make clean
     make -j$JOBS
     make install
+
+    mkdir -p "$BUILD_DIR/$ABI/verification"
+    cp config.h config_components.h ffbuild/config.mak "$BUILD_DIR/$ABI/verification/"
 
     OUTPUT_LIB=${OUTPUT_DIR}/lib/${ABI}
     mkdir -p "${OUTPUT_LIB}"
@@ -258,6 +282,8 @@ if [[ ! -d "$DAV1D_DIR" ]]; then
   downloadSource "https://github.com/videolan/dav1d/archive/refs/tags/${DAV1D_VERSION}.tar.gz" "$DAV1D_DIR"
 fi
 
-buildMbedTLS
-buildDav1d
+if [[ ${SIZE_SKIP_EXTERNAL:-0} != 1 ]]; then
+  buildMbedTLS
+  buildDav1d
+fi
 buildFfmpeg

@@ -86,6 +86,8 @@ printf '%s\\n' "$@" > "$2.args"
 prefix=${1#--prefix=}
 mkdir -p "$prefix/lib" "$prefix/include"
 touch "$prefix/lib/libavcodec.so" "$prefix/include/avcodec.h"
+mkdir -p ffbuild
+touch config.h config_components.h ffbuild/config.mak
 printf '%s\\n' "$@" > "$prefix/configure.args"
 printf '%s\\n' "$PKG_CONFIG_PATH" "$PKG_CONFIG_LIBDIR" > "$prefix/pkgconfig.env"
 ''')
@@ -116,6 +118,25 @@ printf '%s\\n' "$PKG_CONFIG_PATH" "$PKG_CONFIG_LIBDIR" > "$prefix/pkgconfig.env"
             assert '--cpu=x86-64' in args
         assert (ffmpeg / f'build/{abi}/pkgconfig.env').read_text().splitlines() == [
             '', str(ffmpeg / f'build/external/{abi}/lib/pkgconfig')]
+    # Profiles may change optimization flags, never decoder/demuxer/protocol selection.
+    baseline_args = (ffmpeg / 'build/arm64-v8a/configure.args').read_text().splitlines()
+    baseline_features = sorted(arg for arg in baseline_args
+                               if arg.startswith(('--enable-', '--disable-')))
+    for profile in ('link', 'small'):
+        env.update(SIZE_PROFILE=profile, SIZE_ABIS='arm64-v8a', SIZE_SKIP_EXTERNAL='1')
+        result = run()
+        assert result.returncode == 0, result
+        args = (ffmpeg / f'build-{profile}/arm64-v8a/configure.args').read_text().splitlines()
+        features = sorted(arg for arg in args if arg.startswith(('--enable-', '--disable-'))
+                          and arg != '--enable-lto=thin')
+        assert features == baseline_features
+        assert '--enable-lto=thin' in args and '--enable-small' not in args
+        assert ('--optflags=-Oz' in args) == (profile == 'small')
+        assert (ffmpeg / f'output-{profile}/lib/arm64-v8a/libavcodec.so').exists()
+    env['SIZE_PROFILE'] = 'invalid'
+    assert run().returncode == 2
+    for key in ('SIZE_PROFILE', 'SIZE_ABIS', 'SIZE_SKIP_EXTERNAL'):
+        env.pop(key)
     executable(root / 'bin/ninja', 'exit 43\n')
     assert run().returncode == 43, 'dav1d build failures must stop the build'
 
