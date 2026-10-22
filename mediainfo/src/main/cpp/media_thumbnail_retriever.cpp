@@ -4,6 +4,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 #include <libavutil/display.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/time.h>
 }
 
 #include <android/bitmap.h>
@@ -192,56 +193,13 @@ static AVCodecContext *create_decoder_context(MediaThumbnailRetrieverContext *co
     return codecContext;
 }
 
-static bool decode_next_frame(MediaThumbnailRetrieverContext *context,
-        AVCodecContext *codecContext,
-        AVPacket *packet,
-        AVFrame *frame) {
-    while (av_read_frame(context->formatContext, packet) >= 0) {
-        if (packet->stream_index != context->videoStreamIndex) {
-            av_packet_unref(packet);
-            continue;
-        }
-
-        int sendResult = avcodec_send_packet(codecContext, packet);
-        av_packet_unref(packet);
-        if (sendResult < 0) {
-            return false;
-        }
-
-        int receiveResult = avcodec_receive_frame(codecContext, frame);
-        if (receiveResult == AVERROR(EAGAIN) || receiveResult == AVERROR_EOF) {
-            continue;
-        }
-        if (receiveResult < 0) {
-            return false;
-        }
-
-        return true;
-    }
-
-    avcodec_send_packet(codecContext, nullptr);
-    if (avcodec_receive_frame(codecContext, frame) >= 0) {
-        return true;
-    }
-
-    return false;
-}
+#include "thumbnail_frame_decoder.h"
 
 static jobject decode_frame_at_time(JNIEnv *env, MediaThumbnailRetrieverContext *context, int64_t timeUs) {
     AVCodecContext *codecContext = create_decoder_context(context);
     if (!codecContext) {
         return nullptr;
     }
-
-    AVStream *videoStream = context->formatContext->streams[context->videoStreamIndex];
-    int64_t targetTimestamp = av_rescale_q(timeUs, AV_TIME_BASE_Q, videoStream->time_base);
-    int seekResult = av_seek_frame(context->formatContext, context->videoStreamIndex, targetTimestamp, AVSEEK_FLAG_BACKWARD);
-    if (seekResult < 0) {
-        // Failed to seek to the requested timestamp; clean up and return null.
-        avcodec_free_context(&codecContext);
-        return nullptr;
-    }
-    avcodec_flush_buffers(codecContext);
 
     AVPacket *packet = av_packet_alloc();
     AVFrame *frame = av_frame_alloc();
@@ -253,7 +211,7 @@ static jobject decode_frame_at_time(JNIEnv *env, MediaThumbnailRetrieverContext 
     }
 
     jobject result = nullptr;
-    if (decode_next_frame(context, codecContext, packet, frame)) {
+    if (seek_and_decode_frame(context, codecContext, packet, frame, timeUs)) {
         result = frame_to_bitmap(env, frame);
     }
 
