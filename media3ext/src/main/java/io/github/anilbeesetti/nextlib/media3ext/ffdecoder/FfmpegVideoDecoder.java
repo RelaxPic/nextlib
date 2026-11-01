@@ -76,7 +76,7 @@ final class FfmpegVideoDecoder extends
      * not required.
      */
     @Nullable
-    private static byte[] getExtraData(String mimeType, List<byte[]> initializationData) {
+    /* package */ static byte[] getExtraData(String mimeType, List<byte[]> initializationData) {
         if (initializationData.isEmpty()) return null;
         switch (mimeType) {
             case MimeTypes.VIDEO_H264 -> {
@@ -87,7 +87,9 @@ final class FfmpegVideoDecoder extends
                 System.arraycopy(pps, 0, extraData, sps.length, pps.length);
                 return extraData;
             }
-            case MimeTypes.VIDEO_H265 -> {
+            case MimeTypes.VIDEO_H265, MimeTypes.VIDEO_H266, MimeTypes.VIDEO_MP4V -> {
+                // Media3 concatenates the parameter sets into one Annex B buffer.
+                // MPEG-4 Part 2 supplies its Visual Object Sequence / VOL from esds.
                 return initializationData.get(0);
             }
             default -> {

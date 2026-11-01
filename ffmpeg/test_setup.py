@@ -18,8 +18,46 @@ with tempfile.TemporaryDirectory(prefix='nextlib setup ') as temp:
     ffmpeg = root / 'ffmpeg'
     ffmpeg.mkdir()
     shutil.copy(Path(__file__).with_name('setup.sh'), ffmpeg)
+    shutil.copytree(Path(__file__).with_name('patches'), ffmpeg / 'patches')
     for name in ('mbedtls-3.6.7', 'ffmpeg-9.0.1', 'dav1d-1.5.4'):
         (ffmpeg / 'sources' / name).mkdir(parents=True)
+    tiff_source = ffmpeg / 'sources/ffmpeg-9.0.1/libavcodec/tiff.c'
+    tiff_source.parent.mkdir(parents=True)
+    tiff_source.write_text('''
+static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                        int *got_frame, AVPacket *avpkt)
+{
+    GetByteContext stripdata;
+    int retry_for_subifd, retry_for_page;
+    int is_dng;
+    int has_tile_bits, has_strip_bits;
+
+again:
+    retry_for_subifd = s->sub_ifd && (s->get_subimage || (!s->get_thumbnail && s->is_thumbnail));
+    /** whether we should process this multi-page IFD's next page */
+    retry_for_page = s->get_page && s->cur_page + 1 < s->get_page;  // get_page is 1-indexed
+
+    if (retry_for_page) {
+        // set offset to the next IFD
+        off = ff_tget_long(&s->gb, le);
+    } else if (retry_for_subifd) {
+        // set offset to the SubIFD
+        off = s->sub_ifd;
+    }
+
+        if (s->strippos) {
+            if (s->strippos >= (unsigned)avpkt->size)
+                return AVERROR_INVALIDDATA;
+            bytestream2_init(&stripdata, avpkt->data + s->strippos,
+                            avpkt->size - s->strippos);
+        }
+
+        if (s->rps <= 0 || s->rps % s->subsampling[1]) {
+            av_log(avctx, AV_LOG_ERROR, "rps %d invalid\\n", s->rps);
+            return AVERROR_INVALIDDATA;
+        }
+}
+''')
     # Partial previous builds must not suppress a retry.
     (ffmpeg / 'build').mkdir()
     (ffmpeg / 'output').mkdir()
@@ -94,6 +132,7 @@ printf '%s\\n' "$PKG_CONFIG_PATH" "$PKG_CONFIG_LIBDIR" > "$prefix/pkgconfig.env"
     env['PKG_CONFIG_PATH'] = '/host/libraries/must/not/be/used'
     result = run()
     assert result.returncode == 0, result
+    assert 'Single-strip TIFF defaults RowsPerStrip' in tiff_source.read_text()
     for abi, toolchain, cpu in (
         ('x86', 'i686-linux-android', 'x86'),
         ('x86_64', 'x86_64-linux-android', 'x86_64'),
@@ -133,6 +172,15 @@ printf '%s\\n' "$PKG_CONFIG_PATH" "$PKG_CONFIG_LIBDIR" > "$prefix/pkgconfig.env"
         assert '--enable-lto=thin' in args and '--enable-small' not in args
         assert ('--optflags=-Oz' in args) == (profile == 'small')
         assert (ffmpeg / f'output-{profile}/lib/arm64-v8a/libavcodec.so').exists()
+    env.update(SIZE_PROFILE='link', SIZE_ABIS='arm64-v8a', SIZE_SKIP_EXTERNAL='1',
+               EXTRA_DECODERS='vvc tiff')
+    result = run()
+    assert result.returncode == 0, result
+    extra_args = (ffmpeg / 'build-link/arm64-v8a/configure.args').read_text().splitlines()
+    assert '--enable-decoder=vvc' in extra_args
+    assert '--enable-decoder=tiff' in extra_args
+    # FFmpeg selects MJPEG as TIFF's JPEG-compression dependency.
+    env.pop('EXTRA_DECODERS')
     env['SIZE_PROFILE'] = 'invalid'
     assert run().returncode == 2
     for key in ('SIZE_PROFILE', 'SIZE_ABIS', 'SIZE_SKIP_EXTERNAL'):

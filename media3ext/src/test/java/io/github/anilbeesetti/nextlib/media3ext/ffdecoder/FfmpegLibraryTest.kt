@@ -11,4 +11,14 @@ class FfmpegLibraryTest {
     fun av1SelectsDav1d() {
         assertEquals("libdav1d", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_AV1))
     }
+
+    @Test
+    fun additionalVideoCodecsSelectNativeDecoders() {
+        assertEquals("mjpeg", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_MJPEG))
+        assertEquals("vvc", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_H266))
+        assertEquals("prores", FfmpegLibrary.getCodecName("video/x-prores"))
+        assertEquals("mpeg4", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_MP4V))
+        assertEquals("h263", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_H263))
+        assertEquals("mpeg1video", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_MPEG))
+    }
 }

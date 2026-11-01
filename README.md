@@ -1,5 +1,12 @@
 # NextLib
 
+RelaxPic modification notice (2026-11-02): optional `EXTRA_DECODERS` adds
+TIFF/VVC and camera codecs to source builds. A bounded single-strip TIFF
+RowsPerStrip/page-selection compatibility patch is applied from `ffmpeg/patches`.
+The Media3 bridge maps MJPEG, VVC, ProRes, MPEG-4 Part 2, H.263 and MPEG-1 to
+their FFmpeg decoders and preserves VVC/MPEG-4 initialization data. Availability
+still depends on the native build; renderer priority and JNI signatures are unchanged.
+
 RelaxPic modification notice (2026-10-21): this fork adds optional native size
 profiles in `ffmpeg/setup.sh` and corresponding build tests in `ffmpeg/test_setup.py`.
 Decoder, demuxer, parser and protocol selection is preserved; GPLv3 licensing is unchanged.

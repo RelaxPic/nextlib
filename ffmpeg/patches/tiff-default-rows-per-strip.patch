@@ -1,0 +1,35 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -1952,5 +1952,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+     GetByteContext stripdata;
+     int retry_for_subifd, retry_for_page;
++    int ifd_page = 1;
+     int is_dng;
+     int has_tile_bits, has_strip_bits;
+ 
+@@ -2033,10 +2034,11 @@ again:
+     retry_for_subifd = s->sub_ifd && (s->get_subimage || (!s->get_thumbnail && s->is_thumbnail));
+     /** whether we should process this multi-page IFD's next page */
+-    retry_for_page = s->get_page && s->cur_page + 1 < s->get_page;  // get_page is 1-indexed
++    retry_for_page = s->get_page && ifd_page < s->get_page;  // get_page is 1-indexed
+ 
+     if (retry_for_page) {
+         // set offset to the next IFD
+         off = ff_tget_long(&s->gb, le);
++        ifd_page++;
+     } else if (retry_for_subifd) {
+         // set offset to the SubIFD
+         off = s->sub_ifd;
+@@ -2174,7 +2174,12 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
+                             avpkt->size - s->strippos);
+         }
+ 
++        /* Single-strip TIFF defaults RowsPerStrip to 2^32 - 1. */
++        if (s->rps <= 0 && s->strips == 1) {
++            s->rps = s->height;
++        }
++
+         if (s->rps <= 0 || s->rps % s->subsampling[1]) {
+             av_log(avctx, AV_LOG_ERROR, "rps %d invalid\n", s->rps);
+             return AVERROR_INVALIDDATA;

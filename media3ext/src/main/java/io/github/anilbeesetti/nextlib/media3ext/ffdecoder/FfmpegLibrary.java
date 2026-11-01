@@ -120,8 +120,13 @@ public final class FfmpegLibrary {
       // Video codecs
       case MimeTypes.VIDEO_H264 -> "h264";
       case MimeTypes.VIDEO_H265 -> "hevc";
+      case MimeTypes.VIDEO_H266 -> "vvc";
+      case MimeTypes.VIDEO_MJPEG -> "mjpeg";
+      case "video/x-prores" -> "prores";
+      case MimeTypes.VIDEO_MP4V -> "mpeg4";
+      case MimeTypes.VIDEO_H263 -> "h263";
       case MimeTypes.VIDEO_AV1 -> "libdav1d";
-      case MimeTypes.VIDEO_MPEG -> "mpegvideo";
+      case MimeTypes.VIDEO_MPEG -> "mpeg1video";
       case MimeTypes.VIDEO_MPEG2 -> "mpeg2video";
       case MimeTypes.VIDEO_VP8 -> "vp8";
       case MimeTypes.VIDEO_VP9 -> "vp9";

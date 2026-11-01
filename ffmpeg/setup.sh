@@ -25,7 +25,7 @@ MBEDTLS_DIR=$SOURCES_DIR/mbedtls-$MBEDTLS_VERSION
 # Configuration
 ANDROID_ABIS=${SIZE_ABIS:-"x86 x86_64 armeabi-v7a arm64-v8a"}
 ANDROID_PLATFORM=21
-ENABLED_DECODERS="vorbis opus flac alac pcm_mulaw pcm_alaw mp3 amrnb amrwb aac ac3 eac3 dca mlp truehd h264 hevc mpeg2video mpegvideo vp8 vp9 libdav1d"
+ENABLED_DECODERS="vorbis opus flac alac pcm_mulaw pcm_alaw mp3 amrnb amrwb aac ac3 eac3 dca mlp truehd h264 hevc mpeg2video mpegvideo vp8 vp9 libdav1d ${EXTRA_DECODERS:-}"
 JOBS=${SIZE_JOBS:-4}
 SIZE_CFLAGS=""
 SIZE_LDFLAGS=""
@@ -75,7 +75,7 @@ fi
   echo "Android NDK or CMake installation is incomplete." >&2
   exit 1
 }
-for tool in curl tar make pkg-config meson ninja nasm; do
+for tool in curl tar make patch pkg-config meson ninja nasm; do
   command -v "$tool" >/dev/null || { echo "Missing build tool: $tool" >&2; exit 1; }
 done
 
@@ -277,6 +277,9 @@ if [[ ! -d "$MBEDTLS_DIR" ]]; then
 fi
 if [[ ! -d "$FFMPEG_DIR" ]]; then
   downloadSource "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz" "$FFMPEG_DIR"
+fi
+if ! grep -q 'Single-strip TIFF defaults RowsPerStrip' "$FFMPEG_DIR/libavcodec/tiff.c"; then
+  patch -d "$FFMPEG_DIR" -p1 < "$BASE_DIR/patches/tiff-default-rows-per-strip.patch"
 fi
 if [[ ! -d "$DAV1D_DIR" ]]; then
   downloadSource "https://github.com/videolan/dav1d/archive/refs/tags/${DAV1D_VERSION}.tar.gz" "$DAV1D_DIR"
