@@ -8,6 +8,12 @@ import org.junit.Test
 @UnstableApi
 class FfmpegLibraryTest {
     @Test
+    fun legacyCameraCodecsSelectNativeDecoders() {
+        assertEquals("dvvideo", FfmpegLibrary.getCodecName("video/x-dv"))
+        assertEquals("adpcm_ms", FfmpegLibrary.getCodecName("audio/x-adpcm-ms"))
+        assertEquals("adpcm_ima_qt", FfmpegLibrary.getCodecName("audio/x-adpcm-ima-qt"))
+    }
+    @Test
     fun realMediaCodecsSelectDistinctDecoders() {
         for (version in listOf(10, 20, 30, 40)) {
             assertEquals("rv$version", FfmpegLibrary.getCodecName("video/x-pn-realvideo$version"))

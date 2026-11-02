@@ -6,6 +6,15 @@ import java.util.Collections;
 import org.junit.Test;
 
 public class FfmpegAudioParametersTest {
+  @Test public void msAdpcmRequiresFourBitsAndQtImaDoesNotUseWaveHeaders() {
+    assertEquals(4, FfmpegAudioParameters.codedSampleBits("audio/x-adpcm-ms",
+        Arrays.asList(new byte[32], new byte[] {0, 4, 0, 0, 4, 0, 0, 0})));
+    assertThrows(IllegalArgumentException.class,
+        () -> FfmpegAudioParameters.codedSampleBits("audio/x-adpcm-ms",
+            Arrays.asList(new byte[32], new byte[] {0, 4, 0, 0, 3, 0, 0, 0})));
+    assertEquals(0, FfmpegAudioParameters.blockAlignment("audio/x-adpcm-ima-qt", Collections.emptyList()));
+    assertEquals(0, FfmpegAudioParameters.codedSampleBits("audio/x-adpcm-ima-qt", Collections.emptyList()));
+  }
   @Test public void decodesLittleEndianAlignmentForHeaderlessCodecs() {
     for (String mime : new String[] {"audio/x-ms-wmav1", "audio/x-ms-wmav2",
         "audio/x-adpcm-ima-wav", "audio/x-pn-realaudio-cook"}) {
