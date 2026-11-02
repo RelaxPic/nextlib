@@ -333,7 +333,8 @@ static void CheckPacketErrorOrigins() {
     lastErrorFunction = nullptr;
     // The send is rejected before touching this input; decoding earlier data fails.
     int result = Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegVideoDecoder_ffmpegSendPacket(
-            &env, nullptr, reinterpret_cast<jlong>(&context), reinterpret_cast<jobject>(bytes), 1, 42);
+            &env, nullptr, reinterpret_cast<jlong>(&context), reinterpret_cast<jobject>(bytes), 1, 42,
+            AV_NOPTS_VALUE);
     assert(result == VIDEO_DECODER_ERROR_OTHER);
     assert(lastErrorFunction && strcmp(lastErrorFunction, "avcodec_receive_frame") == 0);
     assert(context.pendingFrames.empty());
@@ -348,7 +349,8 @@ static void CheckPacketErrorOrigins() {
     lastErrorFunction = nullptr;
     // A malformed current packet is still skippable, unlike a receive failure.
     result = Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegVideoDecoder_ffmpegSendPacket(
-            &env, nullptr, reinterpret_cast<jlong>(&context), reinterpret_cast<jobject>(bytes), 1, 43);
+            &env, nullptr, reinterpret_cast<jlong>(&context), reinterpret_cast<jobject>(bytes), 1, 43,
+            AV_NOPTS_VALUE);
     assert(result == VIDEO_DECODER_ERROR_INVALID_DATA);
     assert(lastErrorFunction && strcmp(lastErrorFunction, "avcodec_send_packet") == 0);
     puts("PASS: invalid input retains its send error classification");

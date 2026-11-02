@@ -161,7 +161,10 @@ final class FfmpegVideoDecoder extends
         ByteBuffer inputData = Util.castNonNull(inputBuffer.data);
         int inputSize = inputData.limit();
         // enqueue origin data
-        int sendPacketResult = ffmpegSendPacket(nativeContext, inputData, inputSize, inputBuffer.timeUs);
+        int sendPacketResult = ffmpegSendPacket(nativeContext, inputData, inputSize, inputBuffer.timeUs,
+                inputBuffer.hasSupplementalData()
+                    ? FfmpegVideoTimestamps.decodeTimeUs(inputBuffer.supplementalData, inputBuffer.timeUs)
+                    : Long.MIN_VALUE);
         if (sendPacketResult == VIDEO_DECODER_ERROR_INVALID_DATA) {
             outputBuffer.shouldBeSkipped = true;
             return null;
@@ -170,22 +173,27 @@ final class FfmpegVideoDecoder extends
         }
 
         // receive frame
-        boolean decodeOnly = !isAtLeastOutputStartTimeUs(inputBuffer.timeUs);
-        // We need to dequeue the decoded frame from the decoder even when the input data is
-        // decode-only.
+        // A delayed/reordered output can precede this input packet. Always dequeue
+        // it, then apply the seek boundary to the decoded frame's own timestamp.
         int getFrameResult = ffmpegReceiveFrame(
-                nativeContext, outputMode, outputBuffer, decodeOnly, rotationDegrees);
+                nativeContext, outputMode, outputBuffer, rotationDegrees);
         if (getFrameResult == VIDEO_DECODER_ERROR_OTHER) {
             return new FfmpegDecoderException("ffmpegDecode error: (see logcat)");
         }
 
         if (getFrameResult == VIDEO_DECODER_ERROR_INVALID_DATA) {
             outputBuffer.shouldBeSkipped = true;
+            return null;
         }
 
-        if (!decodeOnly) {
-            outputBuffer.format = inputBuffer.format;
+        // SimpleDecoder premarks this flag using input time. Override it for a
+        // successfully decoded frame, including outputs reordered past the seek.
+        outputBuffer.shouldBeSkipped = !isAtLeastOutputStartTimeUs(outputBuffer.timeUs);
+        if (outputBuffer.shouldBeSkipped) {
+            releaseNativeFrame(outputBuffer);
+            return null;
         }
+        outputBuffer.format = inputBuffer.format;
 
         return null;
     }
@@ -250,7 +258,7 @@ final class FfmpegVideoDecoder extends
      * error occurred.
      */
     private native int ffmpegSendPacket(long context, ByteBuffer encodedData, int length,
-                                        long inputTime);
+                                        long inputTime, long decodeTimeUs);
 
     /**
      * Gets the decoded frame.
@@ -262,7 +270,7 @@ final class FfmpegVideoDecoder extends
      * occurred.
      */
     private native int ffmpegReceiveFrame(
-            long context, int outputMode, VideoDecoderOutputBuffer outputBuffer, boolean decodeOnly,
+            long context, int outputMode, VideoDecoderOutputBuffer outputBuffer,
             int rotationDegrees);
 
 }

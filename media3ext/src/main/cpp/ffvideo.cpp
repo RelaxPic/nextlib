@@ -459,7 +459,8 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegVideoDecoder_ffmpe
                                                                                  jlong jContext,
                                                                                  jobject encoded_data,
                                                                                  jint length,
-                                                                                 jlong input_time) {
+                                                                                 jlong input_time,
+                                                                                 jlong decode_time) {
     auto *const jniContext = reinterpret_cast<JniContext *>(jContext);
 
     auto *inputBuffer = (uint8_t *) env->GetDirectBufferAddress(encoded_data);
@@ -469,7 +470,7 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegVideoDecoder_ffmpe
     }
     memset(inputBuffer + length, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     AVPacket packet{};
-    packet.dts = AV_NOPTS_VALUE;
+    packet.dts = decode_time;
     packet.pos = -1;
     packet.data = inputBuffer;
     packet.size = length;
@@ -488,7 +489,6 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegVideoDecoder_ffmpe
                                                                                    jlong jContext,
                                                                                    jint output_mode,
                                                                                    jobject output_buffer,
-                                                                                   jboolean decode_only,
                                                                                    jint rotation_degrees) {
     auto *const jniContext = reinterpret_cast<JniContext *>(jContext);
 
@@ -496,9 +496,8 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegVideoDecoder_ffmpe
     int result = jniContext->ReceiveFrame(&frame);
 
     // fail
-    if (decode_only || result == AVERROR(EAGAIN)) {
-        // This is not an error. The input data was decode-only or no displayable
-        // frames are available.
+    if (result == AVERROR(EAGAIN)) {
+        // No output frame yet. Java checks the actual frame timestamp for seeks.
         av_frame_free(&frame);
         return VIDEO_DECODER_ERROR_INVALID_DATA;
     }
@@ -508,7 +507,9 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegVideoDecoder_ffmpe
         return VIDEO_DECODER_ERROR_OTHER;
     }
 
-    env->CallVoidMethod(output_buffer, jniContext->init_method, frame->pts, output_mode, nullptr);
+    const int64_t presentationTime = frame->best_effort_timestamp != AV_NOPTS_VALUE
+        ? frame->best_effort_timestamp : frame->pts;
+    env->CallVoidMethod(output_buffer, jniContext->init_method, presentationTime, output_mode, nullptr);
     if (env->ExceptionCheck()) {
         av_frame_free(&frame);
         return VIDEO_DECODER_ERROR_OTHER;
