@@ -311,6 +311,12 @@ JniContext *createVideoContext(JNIEnv *env,
     }
 
     codecContext->thread_count = threads;
+    if (codec->id == AV_CODEC_ID_DVVIDEO) {
+        // DV is intra-only and supports slice threads. Frame threads delay the
+        // first packet and strand the final frames because SimpleDecoder does
+        // not drain FFmpeg at EOS; slice threads retain parallelism without delay.
+        codecContext->thread_type = FF_THREAD_SLICE;
+    }
     if (codec->id == AV_CODEC_ID_WMV1 || codec->id == AV_CODEC_ID_WMV2 ||
         codec->id == AV_CODEC_ID_WMV3 || codec->id == AV_CODEC_ID_VC1 ||
         codec->id == AV_CODEC_ID_RV10 || codec->id == AV_CODEC_ID_RV20 ||
