@@ -101,7 +101,8 @@ AVCodecContext *createContext(JNIEnv *env, AVCodec *codec, jbyteArray extraData,
         context->codec_id == AV_CODEC_ID_WMAV1 || context->codec_id == AV_CODEC_ID_WMAV2 ||
         context->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV ||
         context->codec_id == AV_CODEC_ID_ADPCM_MS ||
-        context->codec_id == AV_CODEC_ID_ADPCM_IMA_QT || context->codec_id == AV_CODEC_ID_COOK) {
+        context->codec_id == AV_CODEC_ID_ADPCM_IMA_QT || context->codec_id == AV_CODEC_ID_COOK ||
+        context->codec_id == AV_CODEC_ID_MACE3 || context->codec_id == AV_CODEC_ID_MACE6) {
         context->sample_rate = rawSampleRate;
         context->ch_layout.nb_channels = rawChannelCount;
         av_channel_layout_default(&context->ch_layout, rawChannelCount);

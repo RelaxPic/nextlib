@@ -12,6 +12,9 @@ class FfmpegLibraryTest {
         assertEquals("dvvideo", FfmpegLibrary.getCodecName("video/x-dv"))
         assertEquals("adpcm_ms", FfmpegLibrary.getCodecName("audio/x-adpcm-ms"))
         assertEquals("adpcm_ima_qt", FfmpegLibrary.getCodecName("audio/x-adpcm-ima-qt"))
+        assertEquals("mjpegb", FfmpegLibrary.getCodecName("video/x-mjpeg-b"))
+        assertEquals("mace3", FfmpegLibrary.getCodecName("audio/x-mace3"))
+        assertEquals("mace6", FfmpegLibrary.getCodecName("audio/x-mace6"))
     }
     @Test
     fun realMediaCodecsSelectDistinctDecoders() {
