@@ -24,6 +24,13 @@ NextLib is a library for adding ffmpeg codecs to [Media3](https://github.com/and
 - **Audio**: Vorbis, Opus, Flac, Alac, pcm_mulaw, pcm_alaw, MP3, Amrnb, Amrwb, AAC, AC3, EAC3, dca, mlp, truehd
 - **Video**: H.264, HEVC, VP8 and VP9 (FFmpeg built-in decoders), AV1 (dav1d)
 
+The `slowpic` fork also maps RealVideo 1–4 and Cook when the native build includes
+`EXTRA_DECODERS="rv10 rv20 rv30 rv40 cook"` (append to any existing extra codecs).
+RealVideo requires container dimensions and its original codec initialization data;
+Cook requires sample rate, channel count, bitrate, initialization data and block alignment.
+The consuming application must supply a RealMedia extractor; decoder mappings alone
+do not add RM/RMVB container support. Other RealAudio codecs remain outside this scope.
+
 ## Setup
 Kotlin DSL:
 

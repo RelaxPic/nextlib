@@ -178,7 +178,8 @@ final class FfmpegAudioDecoder
     if (initializationData.isEmpty()) return null;
     return switch (mimeType) {
       case MimeTypes.AUDIO_AAC, MimeTypes.AUDIO_OPUS,
-          "audio/x-ms-wmav1", "audio/x-ms-wmav2", "audio/x-adpcm-ima-wav" -> initializationData.get(0);
+          "audio/x-ms-wmav1", "audio/x-ms-wmav2", "audio/x-adpcm-ima-wav",
+          "audio/x-pn-realaudio-cook" -> initializationData.get(0);
       case MimeTypes.AUDIO_ALAC -> getAlacExtraData(initializationData);
       case MimeTypes.AUDIO_VORBIS -> getVorbisExtraData(initializationData);
       // Other codecs do not require extra data.

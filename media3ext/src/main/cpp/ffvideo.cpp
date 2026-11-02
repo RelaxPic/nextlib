@@ -312,7 +312,9 @@ JniContext *createVideoContext(JNIEnv *env,
 
     codecContext->thread_count = threads;
     if (codec->id == AV_CODEC_ID_WMV1 || codec->id == AV_CODEC_ID_WMV2 ||
-        codec->id == AV_CODEC_ID_WMV3 || codec->id == AV_CODEC_ID_VC1) {
+        codec->id == AV_CODEC_ID_WMV3 || codec->id == AV_CODEC_ID_VC1 ||
+        codec->id == AV_CODEC_ID_RV10 || codec->id == AV_CODEC_ID_RV20 ||
+        codec->id == AV_CODEC_ID_RV30 || codec->id == AV_CODEC_ID_RV40) {
         // These streams may carry dimensions only in the container header.
         if (width <= 0 || height <= 0) return nullptr;
         codecContext->width = width;

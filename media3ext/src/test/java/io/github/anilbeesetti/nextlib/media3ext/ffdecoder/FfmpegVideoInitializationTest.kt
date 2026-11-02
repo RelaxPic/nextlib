@@ -9,6 +9,15 @@ import org.junit.Test
 @UnstableApi
 class FfmpegVideoInitializationTest {
     @Test
+    fun realVideoPreservesContainerConfiguration() {
+        val configuration = byteArrayOf(0, 0, 0, 8, 0, 0, 32, 16)
+        for (version in listOf(10, 20, 30, 40)) {
+            assertArrayEquals(configuration, FfmpegVideoDecoder.getExtraData(
+                "video/x-pn-realvideo$version", listOf(configuration)))
+        }
+    }
+
+    @Test
     fun windowsMediaPreservesContainerCodecConfiguration() {
         val configuration = byteArrayOf(1, 2, 3, 4)
         for (mime in listOf("video/x-ms-wmv1", "video/x-ms-wmv2", "video/x-ms-wmv3", MimeTypes.VIDEO_VC1)) {

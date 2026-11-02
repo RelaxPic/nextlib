@@ -8,6 +8,14 @@ import org.junit.Test
 @UnstableApi
 class FfmpegLibraryTest {
     @Test
+    fun realMediaCodecsSelectDistinctDecoders() {
+        for (version in listOf(10, 20, 30, 40)) {
+            assertEquals("rv$version", FfmpegLibrary.getCodecName("video/x-pn-realvideo$version"))
+        }
+        assertEquals("cook", FfmpegLibrary.getCodecName("audio/x-pn-realaudio-cook"))
+    }
+
+    @Test
     fun av1SelectsDav1d() {
         assertEquals("libdav1d", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_AV1))
     }

@@ -88,7 +88,9 @@ final class FfmpegVideoDecoder extends
                 return extraData;
             }
             case MimeTypes.VIDEO_H265, MimeTypes.VIDEO_H266, MimeTypes.VIDEO_MP4V,
-                    MimeTypes.VIDEO_VC1, "video/x-ms-wmv1", "video/x-ms-wmv2", "video/x-ms-wmv3" -> {
+                    MimeTypes.VIDEO_VC1, "video/x-ms-wmv1", "video/x-ms-wmv2", "video/x-ms-wmv3",
+                    "video/x-pn-realvideo10", "video/x-pn-realvideo20",
+                    "video/x-pn-realvideo30", "video/x-pn-realvideo40" -> {
                 // Media3 concatenates the parameter sets into one Annex B buffer.
                 // MPEG-4 Part 2 supplies its Visual Object Sequence / VOL from esds.
                 return initializationData.get(0);

@@ -7,10 +7,18 @@ import org.junit.Test;
 
 public class FfmpegAudioParametersTest {
   @Test public void decodesLittleEndianAlignmentForHeaderlessCodecs() {
-    for (String mime : new String[] {"audio/x-ms-wmav1", "audio/x-ms-wmav2", "audio/x-adpcm-ima-wav"}) {
+    for (String mime : new String[] {"audio/x-ms-wmav1", "audio/x-ms-wmav2",
+        "audio/x-adpcm-ima-wav", "audio/x-pn-realaudio-cook"}) {
       assertEquals(1024, FfmpegAudioParameters.blockAlignment(mime,
           Arrays.asList(new byte[0], new byte[] {0, 4, 0, 0, 4, 0, 0, 0})));
     }
+  }
+
+  @Test public void cookRequiresAlignmentButNotImaSampleBits() {
+    assertThrows(IllegalArgumentException.class, () -> FfmpegAudioParameters.blockAlignment(
+        "audio/x-pn-realaudio-cook", Collections.emptyList()));
+    assertEquals(0, FfmpegAudioParameters.codedSampleBits("audio/x-pn-realaudio-cook",
+        Arrays.asList(new byte[8], new byte[] {0, 4, 0, 0, 0, 0, 0, 0})));
   }
 
   @Test public void leavesExistingCodecInitializationUntouched() {

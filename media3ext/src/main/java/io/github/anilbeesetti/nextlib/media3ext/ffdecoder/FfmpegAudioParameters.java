@@ -10,7 +10,8 @@ final class FfmpegAudioParameters {
 
   static int blockAlignment(String mimeType, List<byte[]> initializationData) {
     if (!"audio/x-ms-wmav1".equals(mimeType) && !"audio/x-ms-wmav2".equals(mimeType)
-        && !"audio/x-adpcm-ima-wav".equals(mimeType)) return 0;
+        && !"audio/x-adpcm-ima-wav".equals(mimeType)
+        && !"audio/x-pn-realaudio-cook".equals(mimeType)) return 0;
     if (initializationData.size() != 2 || initializationData.get(1).length != 8) {
       throw new IllegalArgumentException("Missing container audio block alignment");
     }
