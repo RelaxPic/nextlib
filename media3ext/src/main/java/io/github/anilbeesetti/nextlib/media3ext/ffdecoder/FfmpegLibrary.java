@@ -116,6 +116,9 @@ public final class FfmpegLibrary {
       case MimeTypes.AUDIO_ALAC -> "alac";
       case MimeTypes.AUDIO_MLAW -> "pcm_mulaw";
       case MimeTypes.AUDIO_ALAW -> "pcm_alaw";
+      case "audio/x-ms-wmav1" -> "wmav1";
+      case "audio/x-ms-wmav2" -> "wmav2";
+      case "audio/x-adpcm-ima-wav" -> "adpcm_ima_wav";
 
       // Video codecs
       case MimeTypes.VIDEO_H264 -> "h264";
@@ -125,6 +128,10 @@ public final class FfmpegLibrary {
       case "video/x-prores" -> "prores";
       case MimeTypes.VIDEO_MP4V -> "mpeg4";
       case MimeTypes.VIDEO_H263 -> "h263";
+      case "video/x-ms-wmv1" -> "wmv1";
+      case "video/x-ms-wmv2" -> "wmv2";
+      case "video/x-ms-wmv3" -> "wmv3";
+      case MimeTypes.VIDEO_VC1 -> "vc1";
       case MimeTypes.VIDEO_AV1 -> "libdav1d";
       case MimeTypes.VIDEO_MPEG -> "mpeg1video";
       case MimeTypes.VIDEO_MPEG2 -> "mpeg2video";

@@ -58,7 +58,10 @@ final class FfmpegAudioDecoder
     encoding = outputFloat ? C.ENCODING_PCM_FLOAT : C.ENCODING_PCM_16BIT;
     outputBufferSize = outputFloat ? INITIAL_OUTPUT_BUFFER_SIZE_32BIT : INITIAL_OUTPUT_BUFFER_SIZE_16BIT;
     nativeContext =
-        ffmpegInitialize(codecName, extraData, outputFloat, format.sampleRate, format.channelCount);
+        ffmpegInitialize(codecName, extraData, outputFloat, format.sampleRate, format.channelCount,
+            Math.max(0, format.averageBitrate), FfmpegAudioParameters.blockAlignment(
+                format.sampleMimeType, format.initializationData),
+            FfmpegAudioParameters.codedSampleBits(format.sampleMimeType, format.initializationData));
     if (nativeContext == 0) {
       throw new FfmpegDecoderException("Initialization failed.");
     }
@@ -174,7 +177,8 @@ final class FfmpegAudioDecoder
   private static byte[] getExtraData(String mimeType, List<byte[]> initializationData) {
     if (initializationData.isEmpty()) return null;
     return switch (mimeType) {
-      case MimeTypes.AUDIO_AAC, MimeTypes.AUDIO_OPUS -> initializationData.get(0);
+      case MimeTypes.AUDIO_AAC, MimeTypes.AUDIO_OPUS,
+          "audio/x-ms-wmav1", "audio/x-ms-wmav2", "audio/x-adpcm-ima-wav" -> initializationData.get(0);
       case MimeTypes.AUDIO_ALAC -> getAlacExtraData(initializationData);
       case MimeTypes.AUDIO_VORBIS -> getVorbisExtraData(initializationData);
       // Other codecs do not require extra data.
@@ -218,7 +222,10 @@ final class FfmpegAudioDecoder
       @Nullable byte[] extraData,
       boolean outputFloat,
       int rawSampleRate,
-      int rawChannelCount);
+      int rawChannelCount,
+      int bitRate,
+      int blockAlignment,
+      int codedSampleBits);
 
   private native int ffmpegDecode(
       long context, ByteBuffer inputData, int inputSize, SimpleDecoderOutputBuffer decoderOutputBuffer, ByteBuffer outputData, int outputSize);

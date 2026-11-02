@@ -288,7 +288,7 @@ struct JniContext {
 JniContext *createVideoContext(JNIEnv *env,
                                AVCodec *codec,
                                jbyteArray extraData,
-                               jint threads) {
+                               jint threads, jint width, jint height) {
     auto jniContext = std::make_unique<JniContext>();
 
     AVCodecContext *codecContext = avcodec_alloc_context3(codec);
@@ -311,6 +311,13 @@ JniContext *createVideoContext(JNIEnv *env,
     }
 
     codecContext->thread_count = threads;
+    if (codec->id == AV_CODEC_ID_WMV1 || codec->id == AV_CODEC_ID_WMV2 ||
+        codec->id == AV_CODEC_ID_WMV3 || codec->id == AV_CODEC_ID_VC1) {
+        // These streams may carry dimensions only in the container header.
+        if (width <= 0 || height <= 0) return nullptr;
+        codecContext->width = width;
+        codecContext->height = height;
+    }
     if (codec->id == AV_CODEC_ID_AV1) {
         // SimpleDecoder expects a frame per sample and does not drain at EOS.
         // Disable dav1d's frame delay so each sample yields its output promptly.
@@ -342,14 +349,16 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegVideoDecoder_ffmpe
                                                                                  jobject thiz,
                                                                                  jstring codec_name,
                                                                                  jbyteArray extra_data,
-                                                                                 jint threads) {
+                                                                                 jint threads,
+                                                                                 jint width,
+                                                                                 jint height) {
     AVCodec *codec = getCodecByName(env, codec_name);
     if (!codec) {
         LOGE("Codec not found.");
         return 0L;
     }
 
-    return (jlong) createVideoContext(env, codec, extra_data, threads);
+    return (jlong) createVideoContext(env, codec, extra_data, threads, width, height);
 }
 
 extern "C"

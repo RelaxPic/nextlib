@@ -64,7 +64,7 @@ final class FfmpegVideoDecoder extends
         // Format uses clockwise degrees. Ignore unsupported non-right-angle rotations.
         int rotation = format.rotationDegrees % 360;
         rotationDegrees = rotation % 90 == 0 ? (rotation + 360) % 360 : 0;
-        nativeContext = ffmpegInitialize(codecName, extraData, threads);
+        nativeContext = ffmpegInitialize(codecName, extraData, threads, format.width, format.height);
         if (nativeContext == 0) {
             throw new FfmpegDecoderException("Failed to initialize decoder.");
         }
@@ -87,7 +87,8 @@ final class FfmpegVideoDecoder extends
                 System.arraycopy(pps, 0, extraData, sps.length, pps.length);
                 return extraData;
             }
-            case MimeTypes.VIDEO_H265, MimeTypes.VIDEO_H266, MimeTypes.VIDEO_MP4V -> {
+            case MimeTypes.VIDEO_H265, MimeTypes.VIDEO_H266, MimeTypes.VIDEO_MP4V,
+                    MimeTypes.VIDEO_VC1, "video/x-ms-wmv1", "video/x-ms-wmv2", "video/x-ms-wmv3" -> {
                 // Media3 concatenates the parameter sets into one Annex B buffer.
                 // MPEG-4 Part 2 supplies its Visual Object Sequence / VOL from esds.
                 return initializationData.get(0);
@@ -225,7 +226,8 @@ final class FfmpegVideoDecoder extends
         }
     }
 
-    private native long ffmpegInitialize(String codecName, @Nullable byte[] extraData, int threads);
+    private native long ffmpegInitialize(String codecName, @Nullable byte[] extraData, int threads,
+                                        int width, int height);
 
     private native long ffmpegReset(long context);
 

@@ -21,4 +21,15 @@ class FfmpegLibraryTest {
         assertEquals("h263", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_H263))
         assertEquals("mpeg1video", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_MPEG))
     }
+
+    @Test
+    fun windowsMediaCodecsSelectDistinctDecoders() {
+        assertEquals("wmv1", FfmpegLibrary.getCodecName("video/x-ms-wmv1"))
+        assertEquals("wmv2", FfmpegLibrary.getCodecName("video/x-ms-wmv2"))
+        assertEquals("wmv3", FfmpegLibrary.getCodecName("video/x-ms-wmv3"))
+        assertEquals("vc1", FfmpegLibrary.getCodecName(MimeTypes.VIDEO_VC1))
+        assertEquals("wmav1", FfmpegLibrary.getCodecName("audio/x-ms-wmav1"))
+        assertEquals("wmav2", FfmpegLibrary.getCodecName("audio/x-ms-wmav2"))
+        assertEquals("adpcm_ima_wav", FfmpegLibrary.getCodecName("audio/x-adpcm-ima-wav"))
+    }
 }
